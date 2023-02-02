@@ -4,23 +4,142 @@ import axios from 'axios'
 import '../App.css';
 import Loader from './Loader'
 import PropTypes from 'prop-types'
+import InfiniteScroll from "react-infinite-scroll-component";
 
 
-
-export class NewsComponent extends Component {
+ class NewsComponent extends Component {
     static defaultProps = {
         pageSize:10,
         country:'in',
-        category:'all',
-        api:''
-      }
+        category:'general',
+        api:''   }
+
     static propTypes ={
         pageSize:PropTypes.number,
         country:PropTypes.string,
         category:PropTypes.string,
-        api:PropTypes.string,
+        api:PropTypes.string  }
+    
+
+     async updateNews(pageNO){
+        this.props.setBar(0)
+        let url = `https://newsapi.org/v2/top-headlines?q=in&country=${this.props.country}&category=${this.props.category}&apiKey=${this.props.api}&page=${pageNO}&pageSize=${this.props.pageSize}`;
+        // this.setState({loading:true})
+        this.props.setBar(30)
+        axios.get(url).then(data => {
+            let newArticles = data.data.articles;
+            this.props.setBar(60)
+            this.setState({
+                articles: this.state.articles.concat(newArticles),
+                loading:false,
+                totalResults: data.data.totalResults
+            })
+            this.props.setBar(100)
+        })
+        
+     }
+
+  
+
+      capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+      }
+     constructor(props) {
+        super(props);
+        this.state = {
+            articles: [],
+            loading: false,
+            page: 1,
+            totalResults:0
+        }
+        document.title = `${this.capitalizeFirstLetter(this.props.category)} - NewsPoints`
     }
-    //  neerajrajjain21@gmail.com     => b9e94d9186c443368b45e6b5d0be4e9f
+
+     componentDidMount() {          
+        this.updateNews(this.state.page)
+      }
+    
+      fetchMoreData = () => {
+        this.setState({page:this.state.page+1})
+        // console.log("start")
+        let url = `https://newsapi.org/v2/top-headlines?q=in&country=${this.props.country}&category=${this.props.category}&apiKey=${this.props.api}&page=${this.state.page+1}&pageSize=${this.props.pageSize}`;
+        // console.log("The value of page inside fectmoreData is : ",this.state.page+1)
+        axios.get(url).then(data => {
+            let newArticles = data.data.articles;
+            this.setState({
+                articles: this.state.articles.concat(newArticles),
+                loading:false,
+                totalResults: data.data.totalResults
+            })
+            // console.log(this.state.articles.length)
+            // console.log(this.state.totalResults)
+        })
+     
+      };
+    
+    
+    render() {
+        return (
+                 <div >
+
+                
+                        <h1 className='my-5 text-center text-danger fw-bolder'>NewsPoints - Top  headlines </h1>
+                        <div className="container newsStatus d-flex justify-content-between">
+                                <h3 className='my-4 ms-3'>Category : {(this.props.category)[0].toUpperCase()+(this.props.category).slice(1)}</h3>
+                                <h4 className='my-4 me-5'>Total Matches : {this.state.totalResults}</h4>
+                        </div>
+
+                  <InfiniteScroll
+                  dataLength={this.state.articles.length}
+                  next={this.fetchMoreData}
+                  hasMore={this.state.articles.length !== this.state.totalResults && this.state.articles.length < this.state.totalResults }
+                  loader={<Loader/>} >
+                    <div className="container">
+                    <div className="row" style={{"paddingTop": "30px"}}>
+                    {this.state.articles.map((element) => {
+                        return <div className="col-md-4" key={element.url}>
+                            <NewsItem title={element.title} description={element.description} imgUrl={element.urlToImage} newUrl={element.url} author={element.author} publishedAt={element.publishedAt} source={element.source.name} />
+                        </div>
+                    })}  
+                     </div> 
+                     </div>
+                    </InfiniteScroll>          
+                    
+            
+                  </div>
+                
+            
+        )
+    }
+}
+
+
+export default NewsComponent
+
+
+//  <div id='paidSectoinAlert' className={`alert alert-primary ${Math.floor(100/this.props.pageSize) < this.state.page +1? 'd-block':'d-none'}`} role="alert">
+//                     For More News Please Go to Paid Account
+//                 </div>
+//                 <div className="container d-flex justify-content-center my-4">
+//                     <div className="form d-flex">
+//                         <input className='px-2' type="number" name="pageNumberQuery" id="pageNumberQuery" />
+//                         <button className='btn btn-sm btn-info ms-1 text-white f-bold ' onClick={this.searchPage}>Load Page</button>
+//                     </div>
+//                 </div>
+//                 <div className="container d-flex justify-content-between my-4" style={{"height": "32px"}}>
+//                     <button disabled={this.state.page <= 1} type="button" className="btn btn-sm btn-info" onClick={this.hanblePrevClick}>&#8249; Previous</button>
+
+//                     <button disabled={true} type="button" className="btn btn-sm btn-primary">
+//                         <span className="badge text-bg-secondary">Page : {this.state.page}</span>
+//                         <span className="badge text-bg-secondary m-1">{Math.ceil(this.state.totalResults / this.props.pageSize)}</span>
+//                     </button>
+
+//                     <button disabled={this.state.page + 1 > Math.ceil(this.state.totalResults /this.props.pageSize) || Math.floor(100/this.props.pageSize) < this.state.page +1} type="button" id='btnNext' className="btn btn-sm btn-info" onClick={this.hanbleNextClick}>Next &#8250;</button>
+//                 </div> 
+
+
+
+//  neerajrajjain21@gmail.com     => b9e94d9186c443368b45e6b5d0be4e9f
     //  neerajrajjain12@gmail.com     => aad1b842a4194fa28011873a2483c55c
     //  jneha3743@gmail.com           => 9524ed7330d54261be91cca525908830
     //    temp email                  => 84eec0f43184461a912413f992cbd5bb
@@ -29,111 +148,28 @@ export class NewsComponent extends Component {
     //    temp email                  => 1470705f1cbb4da88a0d6cdb12f83408    
     //    temp email                  => 3f12ae4bc4584589b8523109091fcba5
     // api = 'e00424d1253e49658a6f365eea1ff732'
-    
-   
-    hanbleNextClick = async () => {
-        let url = `https://newsapi.org/v2/top-headlines?q=in&country=${this.props.country}&category=${this.props.category}&apiKey=${this.props.api}&page=${this.state.page + 1}&pageSize=${this.props.pageSize}`;
-        this.setState({loading:true})
-        axios.get(url).then(data => {
-            let newArticles = data.data.articles;
-            this.setState({
-                articles: newArticles,
-                page: this.state.page + 1,
-                loading:false
-            })
-        })
-    }
-    hanblePrevClick = async () => {
-        let url = `https://newsapi.org/v2/top-headlines?q=in&country=${this.props.country}&category=${this.props.category}&apiKey=${this.props.api}&page=${this.state.page - 1}&pageSize=${this.props.pageSize}`;
-        this.setState({loading:true})
-        axios.get(url).then((data) => {
-            let newArticles = data.data.articles;
-            this.setState({
-                articles: newArticles,
-                page: this.state.page - 1,
-                loading:false
-            })
-        })
-    }
 
-    searchPage = async (e) => {
-        let value = Number(document.getElementById('pageNumberQuery').value);
-        document.getElementById('pageNumberQuery').value ='';
-        if (!value || value > Math.floor(100/this.props.pageSize)  || value > Math.floor(this.state.totalResults/this.props.pageSize)) {
-            alert('page search input value can not be null or greater than 5 please search again')
-            console.log('page search input value can not be null or greater than 5 please search again')
-        } else {
-            let url = `https://newsapi.org/v2/top-headlines?q=in&country=${this.props.country}&category=${this.props.category}&apiKey=${this.props.api}&page=${value}&pageSize=${this.props.pageSize}`;
-            this.setState({loading:true})
-            await axios.get(url).then((data) => {
-                let newArticles = data.data.articles;
-                this.setState({
-                    articles: newArticles,
-                    page: value,
-                    loading:false
-                })
-            })
-        }
-     }    
 
-     constructor() {
-        super();
-        this.state = {
-            articles: [],
-            loading: false,
-            page: 1
-        }
-    }
 
-        async componentDidMount() {
-            let url = `https://newsapi.org/v2/top-headlines?q=in&country=${this.props.country}&category=${this.props.category}&apiKey=${this.props.api}&page=1&pageSize=${this.props.pageSize}`;
-            this.setState({loading:true})
-            axios.get(url).then((data) => {
-                let newArticles = data.data.articles;
-                this.setState({ articles: newArticles, totalResults: data.data.totalResults ,loading:false})
-            })
-        }
-    
-    
-    render() {
-        return (
-            <div className='container my-4' >
-                <h1 className='my-5'>NewsPoints - Top  headlines</h1>
-               
-                <h4 className='my-3'>Total Matches : {this.state.totalResults}</h4>
-                 {this.state.loading && <Loader/>} 
-                 {!this.state.loading &&  <div className="shortNewsContainer row">
-                    {this.state.articles.map((element) => {
-                        return <div className="col-md-4" key={element.url}>
-                            <NewsItem title={element.title} description={element.description} imgUrl={element.urlToImage} newUrl={element.url} />
-                        </div>
-                    })}
-                </div> }
-                
-                <div id='paidSectoinAlert' className={`alert alert-primary ${Math.floor(100/this.props.pageSize) < this.state.page +1? 'd-block':'d-none'}`} role="alert">
-                    For More News Please Go to Paid Account
-                </div>
-                <div className="container d-flex justify-content-center my-4">
-                    <div className="form d-flex">
-                        <input className='px-2' type="number" name="pageNumberQuery" id="pageNumberQuery" />
-                        <button className='btn btn-info ms-1 text-white f-bold ' onClick={this.searchPage}>Load Page</button>
-                    </div>
-                </div>
-                <div className="container d-flex justify-content-between my-4">
-                    <button disabled={this.state.page <= 1} type="button" className="btn btn-info" onClick={this.hanblePrevClick}>&#8249; Previous</button>
 
-                    <button disabled={true} type="button" className="btn btn-primary">
-                        <span className="badge text-bg-secondary">Page : {this.state.page}</span>
-                        <span className="badge text-bg-secondary m-1">{Math.floor(this.state.totalResults / this.props.pageSize)}</span>
-                    </button>
+ // hanbleNextClick = async () => {
+    //     this.updateNews(this.state.page + 1)
+    // }
+    // hanblePrevClick = async () => {
+    //         this.updateNews( this.state.page - 1 )
+    // }
 
-                    <button disabled={this.state.page + 1 > Math.floor(this.state.totalResults /this.props.pageSize) || Math.floor(100/this.props.pageSize) < this.state.page +1} type="button" id='btnNext' className="btn btn-info" onClick={this.hanbleNextClick}>Next &#8250;</button>
-                </div>
-               
-            </div>
-        )
-    }
-}
-// || this.state.page > 4
 
-export default NewsComponent
+
+    // searchPage = async (e) => {
+    //     let value = Number(document.getElementById('pageNumberQuery').value);
+    //     document.getElementById('pageNumberQuery').value ='';
+    //     if (!value || value > Math.floor(100/this.props.pageSize)  || value > Math.ceil(this.state.totalResults/this.props.pageSize)) {
+    //         alert('page search input value can not be null or greater than 5 please search again')
+    //         console.log('page search input value can not be null or greater than 5 please search again')
+    //     } else {
+    //         this.updateNews(value)
+    //     }
+    //  }  
+
+    // !this.state.loading &&
